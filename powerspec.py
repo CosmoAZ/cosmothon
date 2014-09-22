@@ -1,7 +1,7 @@
 ## @package powerspec
 # 
 # linear matter power spectrum with Eisenstein & Hu transfer function and linear LCDM growth function
-# @note LCDM only
+# @note LCDM only (w0=-1, wa=0)
 
 import math
 import scipy.integrate as integ
