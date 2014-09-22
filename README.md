@@ -1,4 +1,4 @@
 cosmothon
 =========
 
-a python cosmology calculator
+a python cosmology calculator,
