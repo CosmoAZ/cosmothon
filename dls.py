@@ -24,6 +24,8 @@ fileF4 = pyfits.open('/home/alex/DeepLensSurvey/wcs/F4wcs.fits')
 hdrF4 = fileF4[0].header
 fileF5 = pyfits.open('/home/alex/DeepLensSurvey/wcs/F5wcs.fits')
 hdrF5 = fileF5[0].header
+
+# Projection parameters from header
 wcsF1 = wcslib.WcsProjection(hdrF1)
 wcsF2 = wcslib.WcsProjection(hdrF2)
 wcsF3 = wcslib.WcsProjection(hdrF3)

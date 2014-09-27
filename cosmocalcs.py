@@ -912,4 +912,20 @@ def Sigma_crit_Msolar_Mpcsq(zLens, zSources, cc):
     sc = Sigma_crit(zLens, zSources, cc)
     sc_msolar_per_megaparsecsq = (sc/const.msolarKg)/(const.m2Mpc*const.m2Mpc)
     return sc_msolar_per_megaparsecsq
+
+def lensingEfficientyFactor():
+
     
+
+    return g_k
+
+def shearPowerSpectrumCalc():
+    """ Integrates the linear power spectrum to determine shear power spectrum
+    
+    """
+
+    
+
+    intValue = intValue*9/2*self.omegamat*self.omegamat*pow(self.h/self.c, 4)
+
+    return intValue
