@@ -913,9 +913,12 @@ def Sigma_crit_Msolar_Mpcsq(zLens, zSources, cc):
     sc_msolar_per_megaparsecsq = (sc/const.msolarKg)/(const.m2Mpc*const.m2Mpc)
     return sc_msolar_per_megaparsecsq
 
+def returnComovingDistance(z):
+    return 2/self.h*(1 - 1/pow(1 + z, 0.5));
+
 def lensingEfficientyFactor():
 
-    
+    g_k = 
 
     return g_k
 
