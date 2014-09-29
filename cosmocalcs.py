@@ -912,4 +912,28 @@ def Sigma_crit_Msolar_Mpcsq(zLens, zSources, cc):
     sc = Sigma_crit(zLens, zSources, cc)
     sc_msolar_per_megaparsecsq = (sc/const.msolarKg)/(const.m2Mpc*const.m2Mpc)
     return sc_msolar_per_megaparsecsq
+
+def returnComovingDistance(z):
+    return 2/self.h*(1 - 1/pow(1 + z, 0.5));
+
+def lensingIntegrand(x, x_prime, pK):
+    return pK*comovingAngularDiameterDistance(x - x_prime)/cosmovingAngularDiameterDistance(x)
+
+def lensingEfficientyFactor(chi, chimax):
+
+    from scipy.integrate import quad
+
+    g_k = quad(integrand, chi, chimax, args=(probabilityK))
+
+    return g_k
+
+def shearPowerSpectrumCalc():
+    """ Integrates the linear power spectrum to determine shear power spectrum
     
+    """
+
+    
+
+    intValue = intValue*9/2*self.omegamat*self.omegamat*pow(self.h/self.c, 4)
+
+    return intValue
