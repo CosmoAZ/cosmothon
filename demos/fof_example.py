@@ -1,5 +1,9 @@
 """ Demo of friends-of-friends algorithm
 
+    outputs to file:
+    particles.txt: x,y positions of all particles to group
+    groups.txt: each row contains list of x y of all particles in a group, one row per group
+
 """
 import sys, getopt
 import math
@@ -67,7 +71,7 @@ def main(argv):
     ## Run friends-of-friends
        
     # linking length
-    b = 0.06 
+    b = 0.125
     groups = []
     
     i = 1;
