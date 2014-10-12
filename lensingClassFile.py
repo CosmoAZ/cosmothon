@@ -13,26 +13,51 @@ class lensingClass(object):
 
     print "Before __init__\n"
    
+    """
+    Initialization of z value by class call
+    """
     def __init__(self, z):
 
         self.z = z
 
+    """
+    Integrand for spectrum function integration to be used in scipy quad function
+    """
     def integrand(self, x, z):
 
+	i = 1
         print "i"
+	i++
 
+	"""
+	Initialization of cosmocalcs class for each integration step.  I'm sure that there's a better way to do this.
+	"""
 	redShiftCosmocalcs = cosmocalcs.cosmologyCalculator(1, 1, 0, 0)
 
+	"""
+	Sets the emission redshift using cosmocalcs class file, will extract angular diameter distance from this.
+	"""
         redShiftCosmocalcs.setEmissionRedShift(z)
 
+	"""
+	Extraction of angular diameter distance.	
+	"""
         D_A = redShiftCosmocalcs.AngularDiameterDistance()
 
-        redShiftCosmocalcs.setEmissionRedShift(z)
+	"""
+	Returns integration integrand for power spectrum calculation
+	"""
+        return self.doubletAngularDiameterDistance(z, x)/D_A*self.n_I(x)
 
-        return self.doubletAngularDiameterDistance(z, x)/redShiftCosmocalcs.AngularDiameterDistance()
 
+    """
+    Calculates Angular Diameter distance between z1 and z2
+    """
     def doubletAngularDiameterDistance(self, z1, z2):
 
+	"""
+	Initializes cosmocalcs class
+	"""
 	doubletAngularDiameterDistanceCosmocalcs = cosmocalcs.cosmologyCalculator(1, 1, 0, 0)
 
         omegamat = 0.7
