@@ -10,15 +10,29 @@ def main(argv):
 
     z = 1
 
+
     print "Initializing lc class\n"
 
     lc = lensingClassFile.lensingClass(1.)
 
-    print "Determining lensing weight function\n"
 
-    wat = lc.lensingWeightFunction(z)
+    print "Extracting redshifts from DLS data"
 
-    print wat
+    F2redshifts = lc.getRedshiftsFromDLS()
+    
+
+    sortedF2Redshifts = lc.sort_Redshift_Values(F2redshifts)
+
+    for z in sortedF2Redshifts:
+
+        print "Determining lensing weight function\n"
+
+        wat = lc.lensingWeightFunction(z)
+
+        print wat
+
+        
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
