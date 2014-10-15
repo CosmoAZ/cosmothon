@@ -19,16 +19,17 @@ def main(argv):
     print "Extracting redshifts from DLS data"
 
     F2redshifts = lc.getRedshiftsFromDLS()
-    
+
+    print "Sorting redshift values"
 
     sortedF2Redshifts = lc.sort_Redshift_Values(F2redshifts)
 
     for z in sortedF2Redshifts:
 
-        print "Determining lensing weight function\n"
-
+        print "Determining lensing weight function at z: ", z
+        
         wat = lc.lensingWeightFunction(z)
-
+        
         print wat
 
         

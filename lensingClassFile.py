@@ -88,7 +88,7 @@ class lensingClass(object):
     """
     Integrand for spectrum function integration to be used in scipy quad function
     """
-    def integrand(self, x, z):
+    def lensingWeightFunctionIntegrand(self, x, z):
 
         print "i"
 
@@ -153,6 +153,8 @@ class lensingClass(object):
 
         print "Beginning of lensingWeightFunction\n"
 
+        exit
+
         from scipy.integrate import quad
 
         n_i = 1
@@ -174,7 +176,11 @@ class lensingClass(object):
         zmin = self.z
         b = 0
 
-        W = quad(self.integrand, zmin, zmax, args=(z)) 
+        W = quad(self.lensingWeightFunctionIntegrand, zmin, zmax, args=(z)) 
+
+        print "Aborting here"
+
+        exit
 	
 	W = 3/2*omegamat*h*h*(1 + self.z)*D_A*W[1]
 
