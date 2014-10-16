@@ -10,6 +10,7 @@ def main(argv):
 
     z = 1
 
+    f = open('results.txt', 'w')
 
     print "Initializing lc class\n"
 
@@ -24,14 +25,17 @@ def main(argv):
 
     sortedF2Redshifts = lc.sort_Redshift_Values(F2redshifts)
 
+    i = 1
+
     for z in sortedF2Redshifts:
 
         print "Determining lensing weight function at z: ", z
         
-        wat = lc.lensingWeightFunction(z)
+        wat = lc.lensingWeightFunction(z, sortedF2Redshifts)
         
-        print wat
+        f.write(sortedF2Redshifts[i] + '\t' + wat + '\n')
 
+        i += 1
         
 
 

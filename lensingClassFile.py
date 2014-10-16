@@ -3,6 +3,7 @@
 #
 # lensing class
 
+import sys
 import cosmocalcs
 import pyfits
 import copy
@@ -72,9 +73,7 @@ class lensingClass(object):
         print "\n\n"
         
        #numdisplay.display(redShiftListF2)
-        
-        exit
-        
+                
         return redshiftListF2
 
 
@@ -89,8 +88,6 @@ class lensingClass(object):
     Integrand for spectrum function integration to be used in scipy quad function
     """
     def lensingWeightFunctionIntegrand(self, x, z):
-
-        print "i"
 
 	"""
 	Initialization of cosmocalcs class for each integration step.  I'm sure that there's a better way to do this.
@@ -112,6 +109,18 @@ class lensingClass(object):
 	"""
         return self.doubletAngularDiameterDistance(z, x)/D_A*self.n_i(x)
 
+    def calcIntegrationArray(self, z, zlist):
+
+        i = 1
+        outarray = []
+
+        for zval in zlist:
+
+            if zval > z:
+
+                outarray.append(self.lensingWeightFunctionIntegrand(zval, z))
+                
+                i += 1
 
     """
     Calculates Angular Diameter distance between z1 and z2
@@ -131,6 +140,8 @@ class lensingClass(object):
         doubletAngularDiameterDistanceCosmocalcs.setEmissionRedShift(z2)
         DM2 = doubletAngularDiameterDistanceCosmocalcs.AngularDiameterDistance()
 
+        doubletAngularDiameterDistanceCosmocalcs = cosmocalcs.cosmologyCalculator(1, 1, 0, 0)
+
         """
         Calculates and then returns angular diameter distnace for z1
         """
@@ -149,42 +160,44 @@ class lensingClass(object):
         return DA12
 
 
-    def lensingWeightFunction(self, z):
+    def lensingWeightFunction(self, z, lensingzlist):
 
         print "Beginning of lensingWeightFunction\n"
 
-        exit
+        from scipy.integrate import simps
 
-        from scipy.integrate import quad
+        f = open('Wvalues.txt', 'w')
 
         n_i = 1
         h = 1
         temp_h = h
         omegamat = 0.7
+        zmax = 27
 
         print "h is " 
         print h
 
-        init_cosmologyCalculator = cosmocalcs.cosmologyCalculator(1, 0.05, 0.08)
-        
+        init_cosmologyCalculator = cosmocalcs.cosmologyCalculator(1, 1, 0, 0)
+               
         init_cosmologyCalculator.setEmissionRedShift(z)
         D_A = init_cosmologyCalculator.AngularDiameterDistance()
-
+        
         print D_A
 
-        zmax = 50
-        zmin = self.z
-        b = 0
+        for z in lensingzlist:
 
-        W = quad(self.lensingWeightFunctionIntegrand, zmin, zmax, args=(z)) 
+            integrand = self.calcIntegrationArray(z, lensingzlist)
 
-        print "Aborting here"
+            W = simps(integrand, lensingzlist) 
 
-        exit
-	
-	W = 3/2*omegamat*h*h*(1 + self.z)*D_A*W[1]
+            W *= 3/2*omegamat*h*h*(1 + self.z)*D_A*W[1]
 
-        print "W is ", W
+            print "W is ", W
+
+            f.write(W)
+            f.write('\n')
+
+        f.close()
 
         return W
 
