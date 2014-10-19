@@ -21,22 +21,21 @@ def main(argv):
 
     F2redshifts = lc.getRedshiftsFromDLS()
 
+    orgList, numList = lc.organizeRedshifts(F2redshifts)
+
     print "Sorting redshift values"
 
-    sortedF2Redshifts = lc.sort_Redshift_Values(F2redshifts)
-
-    i = 1
+    sortedF2Redshifts = lc.sort_Redshift_Values(orgList)
 
     for z in sortedF2Redshifts:
 
         print "Determining lensing weight function at z: ", z
         
-        wat = lc.lensingWeightFunction(z, sortedF2Redshifts)
+        Wval = lc.lensingWeightFunction(sortedF2Redshifts)
         
-        f.write(sortedF2Redshifts[i] + '\t' + wat + '\n')
-
-        i += 1
-        
+        f.write(z + '\t' + Wval + '\n')
+      
+    f.close()
 
 
 if __name__ == "__main__":

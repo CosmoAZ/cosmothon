@@ -20,7 +20,7 @@ class lensingClass(object):
     def __init__(self, z):
 
         self.z = z
-
+        self.numbins = 100
 
     def getRedshiftsFromDLS(self):
         
@@ -87,12 +87,17 @@ class lensingClass(object):
     """
     Integrand for spectrum function integration to be used in scipy quad function
     """
-    def lensingWeightFunctionIntegrand(self, x, z):
+    def lensingWeightFunctionIntegrand(self, x, z, numList, orgList):
+
+        omegams = [1, 0.05, 0.2]
+        wX=-1. # dark energy equation of state today
+        wXa=0. # dark energy equation of state evolution
+        h = 0.7
 
 	"""
 	Initialization of cosmocalcs class for each integration step.  I'm sure that there's a better way to do this.
 	"""
-	redShiftCosmocalcs = cosmocalcs.cosmologyCalculator(1, 1, 0, 0)
+	redShiftCosmocalcs = cosmocalcs.cosmologyCalculator(h, omegams[1], omegams[2], wX, wXa)
 
 	"""
 	Sets the emission redshift using cosmocalcs class file, will extract angular diameter distance from this.
@@ -107,20 +112,21 @@ class lensingClass(object):
 	"""
 	Returns integration integrand for power spectrum calculation
 	"""
-        return self.doubletAngularDiameterDistance(z, x)/D_A*self.n_i(x)
+        return self.doubletAngularDiameterDistance(z, x)/D_A*self.n_i(z, numList, orgList)
 
-    def calcIntegrationArray(self, z, zlist):
+    def calcIntegrationArray(self, init_cosmologyCalculator, z, zlist, numList, orgList):
 
-        i = 1
         outarray = []
 
         for zval in zlist:
 
             if zval > z:
 
-                outarray.append(self.lensingWeightFunctionIntegrand(zval, z))
-                
-                i += 1
+                print "In calcIntegrationArray, checking z: ", zval
+
+                outarray.append(self.lensingWeightFunctionIntegrand(zval, z, numList, orgList)) 
+
+        return outarray
 
     """
     Calculates Angular Diameter distance between z1 and z2
@@ -159,8 +165,16 @@ class lensingClass(object):
 
         return DA12
 
+    """
+    Calculates the lensing weight function, W, to be used in the power spectrum calculation
+    
+    Inputs a set of redshifts, and uses cosmocalcs to calculate the weight at each z
+    """
+    def lensingWeightFunction(self, lensingzlist):
 
-    def lensingWeightFunction(self, z, lensingzlist):
+        omegams = [1, 0.05, 0.2] 
+        wX=-1. # dark energy equation of state today
+        wXa=0. # dark energy equation of state evolution
 
         print "Beginning of lensingWeightFunction\n"
 
@@ -169,26 +183,26 @@ class lensingClass(object):
         f = open('Wvalues.txt', 'w')
 
         n_i = 1
-        h = 1
-        temp_h = h
+        h = 0.7
         omegamat = 0.7
-        zmax = 27
-
-        print "h is " 
-        print h
-
-        init_cosmologyCalculator = cosmocalcs.cosmologyCalculator(1, 1, 0, 0)
+         
+        init_cosmologyCalculator = cosmocalcs.cosmologyCalculator(h, omegams[1], omegams[2], wX, wXa)
                
-        init_cosmologyCalculator.setEmissionRedShift(z)
-        D_A = init_cosmologyCalculator.AngularDiameterDistance()
-        
-        print D_A
-
         for z in lensingzlist:
 
-            integrand = self.calcIntegrationArray(z, lensingzlist)
+            print "z is: ", z 
 
-            W = simps(integrand, lensingzlist) 
+            init_cosmologyCalculator.setEmissionRedShift(z)
+            D_A = init_cosmologyCalculator.AngularDiameterDistance()
+
+            print "calculating integrand array"
+
+            #integrand = self.calcIntegrationArray(z, lensingzlist)
+            integrand = self.calcIntegrationArray(init_cosmologyCalculator, z, lensingzlist)
+
+            print "integrating now"
+
+            W = simps(integrand, [i for i in lensingzlist if i >= z]) 
 
             W *= 3/2*omegamat*h*h*(1 + self.z)*D_A*W[1]
 
@@ -201,11 +215,35 @@ class lensingClass(object):
 
         return W
 
+    def organizeRedshifts(self, zlist):
+
+        orgList = []
+        numList = []
+
+        minList = min(zlist)
+        maxList = max(zlist)
+
+        delta = (maxList - minList)/self.numbins
+
+        listVal = minList
+
+        for i in range(1, 100):
+
+            orgList.append(listVal)
+            numList.append(len([val for val in listVal if val >= listVal and val < listVal + delta]))
+
+            listVal += delta
+
+        return orgList, numList
 
         #        integrand = lambda x: cosmocalcs.calcAngularDistance(z, x)/cosmocalcs.calcAngularDistance(z)#*n_i(x)
 
-    def n_i(self, x):
-        
-        return 1
+    def n_i(self, z, numList, orgList):
+
+        delta = orgList[1] - orgList[0]
+
+        low = min([i for i in orgList if i >= orgList and i < orgList + delta])
+
+        return low
 
 
