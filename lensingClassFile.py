@@ -1,4 +1,4 @@
-## @package lensingClass
+# @package lensingClass
 # Contains lensing calculation functions
 #
 # lensing class
@@ -114,11 +114,13 @@ class lensingClass(object):
 	"""
         return self.doubletAngularDiameterDistance(z, x)/D_A*self.n_i(z, numList, orgList)
 
-    def calcIntegrationArray(self, init_cosmologyCalculator, z, zlist, numList, orgList):
+    def calcIntegrationArray(self, init_cosmologyCalculator, z, zlist, orgList, numList):
 
         outarray = []
 
-        for zval in zlist:
+	print "Printing orgList: 36", orgList
+
+        for zval in orgList: #zlist:
 
             if zval > z:
 
@@ -170,7 +172,7 @@ class lensingClass(object):
     
     Inputs a set of redshifts, and uses cosmocalcs to calculate the weight at each z
     """
-    def lensingWeightFunction(self, lensingzlist):
+    def lensingWeightFunction(self, lensingzlist, orgList, numList):
 
         omegams = [1, 0.05, 0.2] 
         wX=-1. # dark energy equation of state today
@@ -188,9 +190,13 @@ class lensingClass(object):
          
         init_cosmologyCalculator = cosmocalcs.cosmologyCalculator(h, omegams[1], omegams[2], wX, wXa)
                
+	#orgList, numList = self.organizeRedshifts(lensingzlist)
+
         for z in lensingzlist:
 
             print "z is: ", z 
+
+            init_cosmologyCalculator = cosmocalcs.cosmologyCalculator(h, omegams[1], omegams[2], wX, wXa)
 
             init_cosmologyCalculator.setEmissionRedShift(z)
             D_A = init_cosmologyCalculator.AngularDiameterDistance()
@@ -198,18 +204,26 @@ class lensingClass(object):
             print "calculating integrand array"
 
             #integrand = self.calcIntegrationArray(z, lensingzlist)
-            integrand = self.calcIntegrationArray(init_cosmologyCalculator, z, lensingzlist)
+            integrand = self.calcIntegrationArray(init_cosmologyCalculator, z, lensingzlist, orgList, numList)
 
             print "integrating now"
 
-            W = simps(integrand, [i for i in lensingzlist if i >= z]) 
+            print "Size of integrand is ", len(integrand)
 
-            W *= 3/2*omegamat*h*h*(1 + self.z)*D_A*W[1]
+            print "Size of x vals is ", len([i for i in orgList[0:len(orgList)-1] if i >= z])
+
+            print "\n\n\n\n"
+
+            print "Integrand is: ", integrand
+            print "x is: ", [i for i in orgList if i >= z]
+
+            W = simps(integrand, [i for i in orgList[0:len(orgList)-1] if i >= z]) 
+
+            W *= 3/2*omegamat*h*h*(1 + self.z)*D_A*W
 
             print "W is ", W
 
-            f.write(W)
-            f.write('\n')
+            f.write(str(z) + "\t" + str(W) + "\n")
 
         f.close()
 
@@ -219,20 +233,45 @@ class lensingClass(object):
 
         orgList = []
         numList = []
-
+	
         minList = min(zlist)
         maxList = max(zlist)
 
         delta = (maxList - minList)/self.numbins
 
-        listVal = minList
+	binVal = minList
 
-        for i in range(1, 100):
+	for i in range(self.numbins):
+
+		orgList.append(binVal)
+
+		print "Printing binVal ", binVal
+
+		binVal += delta        
+
+		numList.append(0)
+
+	for i in range(len(zlist)):
+
+		for j in range(self.numbins - 1):
+
+			if zlist[i] >= orgList[j] and zlist[i] < orgList[j+1]:
+
+				numList[j] += 1
+
+        """for i in range(1, 100):
 
             orgList.append(listVal)
-            numList.append(len([val for val in listVal if val >= listVal and val < listVal + delta]))
+            #numList.append(len([val for val in listVal if val >= listVal and val < listVal + delta]))
 
-            listVal += delta
+	    for i in range(listVal):
+
+		if 
+
+            #listVal += delta
+	"""
+
+	print "Printing orgList !", orgList
 
         return orgList, numList
 
@@ -240,10 +279,16 @@ class lensingClass(object):
 
     def n_i(self, z, numList, orgList):
 
-        delta = orgList[1] - orgList[0]
+#        delta = orgList[1] - orgList[0]
 
-        low = min([i for i in orgList if i >= orgList and i < orgList + delta])
+#        low = min([i for i in orgList if i >= orgList and i < orgList + delta])
 
-        return low
+        for i in range(self.numbins - 1):
 
+            if z >= orgList[i] and z < orgList[i+1]:
+
+                return orgList[i]
+
+
+        return 0
 
