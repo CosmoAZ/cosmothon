@@ -8,7 +8,20 @@ def main(argv):
     print ''
     print '=== Running lensing.py program ===='
 
-    z = 1
+
+    """
+    
+    ##################    
+
+    lc = lensingClassFile.lensingClass(0)
+
+    lc.calcPowerSpectrum()
+
+    print "Exiting system"
+
+    sys.exit()
+
+    ###################
 
     f = open('results.txt', 'w')
 
@@ -33,11 +46,15 @@ def main(argv):
 
         print "Determining lensing weight function at z: ", z
         
-        Wval = lc.lensingWeightFunction(sortedF2Redshifts)
+        Wval = lc.lensingWeightFunction(sortedF2Redshifts, organizedList, numberedList)
         
         f.write(z + '\t' + Wval + '\n')
       
     f.close()
+
+    """
+
+    
 
 
 if __name__ == "__main__":

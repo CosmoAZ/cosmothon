@@ -7,6 +7,7 @@ import sys
 import cosmocalcs
 import pyfits
 import copy
+import powerspec
 #import numdisplay
 
 class lensingClass(object):
@@ -21,6 +22,12 @@ class lensingClass(object):
 
         self.z = z
         self.numbins = 100
+
+	self.h = 0.7
+
+        self.omegams = [1, 0.05, 0.2]
+        self.wX=-1. # dark energy equation of state today
+        self.wXa=0. # dark energy equation of state evolution
 
     def getRedshiftsFromDLS(self):
         
@@ -43,7 +50,7 @@ class lensingClass(object):
         #F5 = pyfits.open('/home/akilgall/field5_sources.fits')
         
         #F1header = pyfits.getheader('/home/akilgall/field1_sources.fits')
-        F2header = pyfits.getheader('/home/akilgall/field2_sources.fits')
+        #F2header = pyfits.getheader('/home/akilgall/field2_sources.fits')
         #F3header = pyfits.getheader('/home/akilgall/field3_sources.fits')
         #F4header = pyfits.getheader('/home/akilgall/field4_sources.fits')
         #F5header = pyfits.getheader('/home/akilgall/field5_sources.fits')
@@ -63,7 +70,7 @@ class lensingClass(object):
         print "\n\n"
 
         #redshiftListF1 = F1datacube[3]
-        redshiftListF2 = F2datacube.field(2)
+        redshiftListF2 = F2datacube.field(3)
         #redshiftListF3 = F3datacube[3]
         #redshiftListF4 = F4datacube[3]
         #redshiftListF5 = F5datacube[3]
@@ -71,13 +78,12 @@ class lensingClass(object):
         print "Printing redshift list "
         print redshiftListF2
         print "\n\n"
-        
-       #numdisplay.display(redShiftListF2)
-                
+               
         return redshiftListF2
 
-
-
+    """
+    Returns the inputted redshift values sorted from smallest to largest.
+    """
     def sort_Redshift_Values(self, zlist):
 
         sortedzlist = sorted(zlist)
@@ -89,15 +95,10 @@ class lensingClass(object):
     """
     def lensingWeightFunctionIntegrand(self, x, z, numList, orgList):
 
-        omegams = [1, 0.05, 0.2]
-        wX=-1. # dark energy equation of state today
-        wXa=0. # dark energy equation of state evolution
-        h = 0.7
-
 	"""
 	Initialization of cosmocalcs class for each integration step.  I'm sure that there's a better way to do this.
 	"""
-	redShiftCosmocalcs = cosmocalcs.cosmologyCalculator(h, omegams[1], omegams[2], wX, wXa)
+	redShiftCosmocalcs = cosmocalcs.cosmologyCalculator(self.h, self.omegams[1], self.omegams[2], self.wX, self.wXa)
 
 	"""
 	Sets the emission redshift using cosmocalcs class file, will extract angular diameter distance from this.
@@ -114,11 +115,23 @@ class lensingClass(object):
 	"""
         return self.doubletAngularDiameterDistance(z, x)/D_A*self.n_i(z, numList, orgList)
 
-    def calcIntegrationArray(self, init_cosmologyCalculator, z, zlist, orgList, numList):
+
+
+    """
+    Returns integration integrand list.
+    """
+    def calcIntegrationArray(self, z, orgList, numList):
+
+	"""
+	Calculates array used as integrand in the integration to determine the lensing weight function
+
+        Requires input of the redshift to calculate the weight function with respect to, and the binned redshift values and density list. 
+        Outputs the integrand list.
+	"""
 
         outarray = []
 
-	print "Printing orgList: 36", orgList
+	print "Printing orgList: ", orgList
 
         for zval in orgList: #zlist:
 
@@ -130,6 +143,8 @@ class lensingClass(object):
 
         return outarray
 
+
+
     """
     Calculates Angular Diameter distance between z1 and z2
     """
@@ -138,9 +153,9 @@ class lensingClass(object):
 	"""
 	Initializes cosmocalcs class
 	"""
-	doubletAngularDiameterDistanceCosmocalcs = cosmocalcs.cosmologyCalculator(1, 1, 0, 0)
+	doubletAngularDiameterDistanceCosmocalcs = cosmocalcs.cosmologyCalculator(self.h, self.omegams[1], self.omegams[2], self.wX, self.wXa)
 
-        omegamat = 0.7
+        omegamat = 0.3
 
         """
         Calculates and then returns angular diameter distance for z2
@@ -148,7 +163,7 @@ class lensingClass(object):
         doubletAngularDiameterDistanceCosmocalcs.setEmissionRedShift(z2)
         DM2 = doubletAngularDiameterDistanceCosmocalcs.AngularDiameterDistance()
 
-        doubletAngularDiameterDistanceCosmocalcs = cosmocalcs.cosmologyCalculator(1, 1, 0, 0)
+        doubletAngularDiameterDistanceCosmocalcs = cosmocalcs.cosmologyCalculator(self.h, self.omegams[1], self.omegams[2], self.wX, self.wXa)
 
         """
         Calculates and then returns angular diameter distnace for z1
@@ -167,6 +182,7 @@ class lensingClass(object):
 
         return DA12
 
+
     """
     Calculates the lensing weight function, W, to be used in the power spectrum calculation
     
@@ -174,29 +190,21 @@ class lensingClass(object):
     """
     def lensingWeightFunction(self, lensingzlist, orgList, numList):
 
-        omegams = [1, 0.05, 0.2] 
-        wX=-1. # dark energy equation of state today
-        wXa=0. # dark energy equation of state evolution
-
         print "Beginning of lensingWeightFunction\n"
 
         from scipy.integrate import simps
 
         f = open('Wvalues.txt', 'w')
 
-        n_i = 1
-        h = 0.7
-        omegamat = 0.7
-         
-        init_cosmologyCalculator = cosmocalcs.cosmologyCalculator(h, omegams[1], omegams[2], wX, wXa)
-               
+        omegamat = 0.3
+                        
 	#orgList, numList = self.organizeRedshifts(lensingzlist)
 
-        for z in lensingzlist:
+        for z in lensingzlist[1:len(lensingzlist)-1]:
 
             print "z is: ", z 
 
-            init_cosmologyCalculator = cosmocalcs.cosmologyCalculator(h, omegams[1], omegams[2], wX, wXa)
+            init_cosmologyCalculator = cosmocalcs.cosmologyCalculator(self.h, self.omegams[1], self.omegams[2], self.wX, self.wXa)
 
             init_cosmologyCalculator.setEmissionRedShift(z)
             D_A = init_cosmologyCalculator.AngularDiameterDistance()
@@ -204,7 +212,7 @@ class lensingClass(object):
             print "calculating integrand array"
 
             #integrand = self.calcIntegrationArray(z, lensingzlist)
-            integrand = self.calcIntegrationArray(init_cosmologyCalculator, z, lensingzlist, orgList, numList)
+            integrand = self.calcIntegrationArray(z, lensingzlist, numList)
 
             print "integrating now"
 
@@ -219,7 +227,7 @@ class lensingClass(object):
 
             W = simps(integrand, [i for i in orgList[0:len(orgList)-1] if i >= z]) 
 
-            W *= 3/2*omegamat*h*h*(1 + self.z)*D_A*W
+            W *= 3/2*omegamat*self.h*self.h*(1 + self.z)*D_A*W
 
             print "W is ", W
 
@@ -287,8 +295,50 @@ class lensingClass(object):
 
             if z >= orgList[i] and z < orgList[i+1]:
 
-                return orgList[i]
+                return numList[i]
 
 
         return 0
+
+    def calcPowerSpectrum(self):
+
+
+	l = 1
+
+        ps = powerspec.transferFunction(1, 1, 1)
+
+	f = open('PowerSpectrum_results.txt', 'w')
+
+	f.write("z" + '\t' + "Wval" + "\t" + "PS" + '\n')
+
+	lc = lensingClassFile.lensingClass(0)
+
+	F2redshifts = lc.getRedshiftsFromDLS()
+
+	organizedList, numberedList = lc.organizeRedshifts(F2redshifts)
+
+	sortedF2Redshifts = lc.sort_Redshift_Values(organizedList)
+
+	Wval = []
+
+	i = 1
+
+	for z in sortedF2Redshifts:
+
+		print "Determining lensing weight function at z: ", z
+        
+		Wval.append(lc.lensingWeightFunction(sortedF2Redshifts, organizedList, numberedList))
+        
+		f.write(z + '\t' + Wval[i] + '\n')
+
+		i += 1      
+
+	f.close()
+
+        return Wval
+
+
+
+
+
 

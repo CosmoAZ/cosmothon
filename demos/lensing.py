@@ -8,8 +8,21 @@ def main(argv):
     print ''
     print '=== Running lensing.py program ===='
 
-    z = 1
 
+    """
+    
+    ##################    
+
+    lc = lensingClassFile.lensingClass(0)
+
+    lc.calcPowerSpectrum()
+
+    print "Exiting system"
+
+    sys.exit()
+
+    ###################
+  """
     f = open('results.txt', 'w')
 
     print "Initializing lc class\n"
@@ -38,6 +51,10 @@ def main(argv):
         f.write(z + '\t' + Wval + '\n')
       
     f.close()
+
+  
+
+    
 
 
 if __name__ == "__main__":
