@@ -42,13 +42,14 @@ def main(argv):
 
     sortedF2Redshifts = lc.sort_Redshift_Values(organizedList)
 
-    for z in sortedF2Redshifts:
+    for z in sortedF2Redshifts: 
+        #[1:len(sortedF2Reshifts) - 1]:
 
         print "Determining lensing weight function at z: ", z
         
-        Wval = lc.lensingWeightFunction(sortedF2Redshifts, organizedList, numberedList)
+        Wval = lc.lensingWeightFunction(z, sortedF2Redshifts, organizedList, numberedList)
         
-        f.write(z + '\t' + Wval + '\n')
+        f.write(str(z) + '\t' + str(Wval) + '\n')
       
     f.close()
 

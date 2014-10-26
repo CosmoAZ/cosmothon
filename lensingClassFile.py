@@ -8,6 +8,7 @@ import cosmocalcs
 import pyfits
 import copy
 import powerspec
+import math
 #import numdisplay
 
 class lensingClass(object):
@@ -21,13 +22,15 @@ class lensingClass(object):
     def __init__(self, z):
 
         self.z = z
-        self.numbins = 100
+        self.numbins = 300
 
 	self.h = 0.7
 
-        self.omegams = [1, 0.05, 0.2]
+        self.omegams = [0.3, 0.7, 0.05]
         self.wX=-1. # dark energy equation of state today
         self.wXa=0. # dark energy equation of state evolution
+#        self.width = .01
+        self.width = .01
 
     def getRedshiftsFromDLS(self):
         
@@ -103,7 +106,7 @@ class lensingClass(object):
 	"""
 	Sets the emission redshift using cosmocalcs class file, will extract angular diameter distance from this.
 	"""
-        redShiftCosmocalcs.setEmissionRedShift(z)
+        redShiftCosmocalcs.setEmissionRedShift(x)
 
 	"""
 	Extraction of angular diameter distance.	
@@ -113,7 +116,7 @@ class lensingClass(object):
 	"""
 	Returns integration integrand for power spectrum calculation
 	"""
-        return self.doubletAngularDiameterDistance(z, x)/D_A*self.n_i(z, numList, orgList)
+        return self.doubletAngularDiameterDistance(z, x)/D_A*self.n_i(x, numList, orgList)
 
 
 
@@ -131,13 +134,13 @@ class lensingClass(object):
 
         outarray = []
 
-	print "Printing orgList: ", orgList
+#	print "Printing orgList: ", orgList
 
         for zval in orgList: #zlist:
 
             if zval > z:
 
-                print "In calcIntegrationArray, checking z: ", zval
+ #               print "In calcIntegrationArray, checking z: ", zval
 
                 outarray.append(self.lensingWeightFunctionIntegrand(zval, z, numList, orgList)) 
 
@@ -188,19 +191,17 @@ class lensingClass(object):
     
     Inputs a set of redshifts, and uses cosmocalcs to calculate the weight at each z
     """
-    def lensingWeightFunction(self, lensingzlist, orgList, numList):
+    def lensingWeightFunction(self, zlim, lensingzlist, orgList, numList):
 
         print "Beginning of lensingWeightFunction\n"
 
         from scipy.integrate import simps
 
-        f = open('Wvalues.txt', 'w')
-
         omegamat = 0.3
                         
 	#orgList, numList = self.organizeRedshifts(lensingzlist)
 
-        for z in lensingzlist[1:len(lensingzlist)-1]:
+        """for z in lensingzlist[1:len(lensingzlist)-1]:
 
             print "z is: ", z 
 
@@ -233,7 +234,36 @@ class lensingClass(object):
 
             f.write(str(z) + "\t" + str(W) + "\n")
 
-        f.close()
+        f.close()"""
+
+
+        print "z is: ", zlim
+
+        init_cosmologyCalculator = cosmocalcs.cosmologyCalculator(self.h, self.omegams[1], self.omegams[2], self.wX, self.wXa)
+
+        init_cosmologyCalculator.setEmissionRedShift(zlim)
+        D_A = init_cosmologyCalculator.AngularDiameterDistance()
+
+        print "calculating integrand array"
+
+        integrand = self.calcIntegrationArray(zlim, lensingzlist, numList)
+
+        print "integrating now"
+
+        print "Size of integrand is ", len(integrand)
+
+        print "Size of x vals is ", len([i for i in orgList[0:len(orgList)-1] if i >= zlim])
+
+        print "\n\n\n\n"
+
+#        print "Integrand is: ", integrand
+#        print "x is: ", [i for i in orgList if i >= zlim]
+
+        W = simps(integrand, [i for i in orgList[0:len(orgList)-1] if i >= zlim]) 
+
+        W *= 3/2*omegamat*self.h*100*100*self.h*(1 + zlim)*D_A*W/300000
+
+        print "W is ", W
 
         return W
 
@@ -279,7 +309,7 @@ class lensingClass(object):
             #listVal += delta
 	"""
 
-	print "Printing orgList !", orgList
+#	print "Printing orgList !", orgList
 
         return orgList, numList
 
@@ -287,18 +317,36 @@ class lensingClass(object):
 
     def n_i(self, z, numList, orgList):
 
+        from numpy import linspace
+        from scipy.integrate import simps
+
 #        delta = orgList[1] - orgList[0]
 
 #        low = min([i for i in orgList if i >= orgList and i < orgList + delta])
+
+        n_z = -100000000
 
         for i in range(self.numbins - 1):
 
             if z >= orgList[i] and z < orgList[i+1]:
 
-                return numList[i]
+                x = linspace(orgList[i], orgList[i+1], 20)
+
+                integrand = []
+
+                for x_prime in x:
+                
+                    integrand.append(self.gaussFit(x_prime, z))
+
+                n_z = simps(integrand, x)
+
+        return n_z*pow(z, 2)*math.exp(-pow(z/0.25, 2))
+#        return pow(z, 2)*math.exp(-pow(z/0.25, 2))
 
 
-        return 0
+    def gaussFit(self, x, z_0):
+
+        return math.exp(-pow(x - z_0, 2)/(2*pow(self.width, 2)))
 
     def calcPowerSpectrum(self):
 
