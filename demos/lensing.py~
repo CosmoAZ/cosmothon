@@ -8,8 +8,6 @@ def main(argv):
     print ''
     print '=== Running lensing.py program ===='
 
-
-    """
     
     ##################    
 
@@ -17,12 +15,8 @@ def main(argv):
 
     lc.calcPowerSpectrum()
 
-    print "Exiting system"
-
-    sys.exit()
-
     ###################
-  """
+    """
     f = open('results.txt', 'w')
 
     print "Initializing lc class\n"
@@ -42,7 +36,7 @@ def main(argv):
 
     sortedF2Redshifts = lc.sort_Redshift_Values(organizedList)
 
-    for z in sortedF2Redshifts[1:len(sortedF2Reshifts) - 1]:
+    for z in sortedF2Redshifts[1:len(sortedF2Redshifts) - 1]:
 
         print "Determining lensing weight function at z: ", z
         
@@ -51,7 +45,7 @@ def main(argv):
         f.write(str(z) + '\t' + str(Wval) + '\n')
       
     f.close()
-
+    """
   
 
     

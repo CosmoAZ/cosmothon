@@ -22,7 +22,11 @@ class lensingClass(object):
     def __init__(self, z):
 
         self.z = z
-        self.numbins = 300
+        self.numbins = 100
+	self.integrationbins = 50
+	self.z_0 = 0.05
+
+	self.units = 0 #1 for Mpc
 
 	self.h = 0.7
 
@@ -30,7 +34,7 @@ class lensingClass(object):
         self.wX=-1. # dark energy equation of state today
         self.wXa=0. # dark energy equation of state evolution
 #        self.width = .01
-        self.width = .01
+        self.width = .05
 
     def getRedshiftsFromDLS(self):
         
@@ -73,7 +77,7 @@ class lensingClass(object):
         print "\n\n"
 
         #redshiftListF1 = F1datacube[3]
-        redshiftListF2 = F2datacube.field(3)
+        redshiftListF2 = F2datacube.field(1)
         #redshiftListF3 = F3datacube[3]
         #redshiftListF4 = F4datacube[3]
         #redshiftListF5 = F5datacube[3]
@@ -81,6 +85,7 @@ class lensingClass(object):
         print "Printing redshift list "
         print redshiftListF2
         print "\n\n"
+
                
         return redshiftListF2
 
@@ -94,9 +99,9 @@ class lensingClass(object):
         return sortedzlist
 
     """
-    Integrand for spectrum function integration to be used in scipy quad function
+    Integrand for weight function integration to be used in lensingWeight Function
     """
-    def lensingWeightFunctionIntegrand(self, x, z, numList, orgList):
+    def lensingWeightFunctionIntegrand(self, zprime, z, numList, orgList):
 
 	"""
 	Initialization of cosmocalcs class for each integration step.  I'm sure that there's a better way to do this.
@@ -106,17 +111,28 @@ class lensingClass(object):
 	"""
 	Sets the emission redshift using cosmocalcs class file, will extract angular diameter distance from this.
 	"""
-        redShiftCosmocalcs.setEmissionRedShift(x)
+        redShiftCosmocalcs.setEmissionRedShift(zprime)
 
 	"""
 	Extraction of angular diameter distance.	
 	"""
-        D_A = redShiftCosmocalcs.AngularDiameterDistance()
+	if self.units == 1:
+	        D_A = redShiftCosmocalcs.AngularDiameterDistanceMpc()
+	else:
+		D_A = redShiftCosmocalcs.AngularDiameterDistance()
+
+	oi = open('integrand_components.txt', 'a')
+
+        n_save = self.n_i(zprime, numList, orgList)
+	
+	oi.write('z: ' + str(z) + '\t' + 'z\': ' + str(zprime) + '\t' + 'D_Z: ' + str(D_A) + '\t' + 'DD_A: ' + str(self.doubletAngularDiameterDistance(z, zprime)) +'\t' + 'n_i: ' + str(n_save) + '\n')
+
+	oi.close()
 
 	"""
 	Returns integration integrand for power spectrum calculation
 	"""
-        return self.doubletAngularDiameterDistance(z, x)/D_A*self.n_i(x, numList, orgList)
+        return self.doubletAngularDiameterDistance(z, zprime)/D_A*n_save
 
 
 
@@ -136,13 +152,13 @@ class lensingClass(object):
 
 #	print "Printing orgList: ", orgList
 
-        for zval in orgList: #zlist:
+        for zprime in orgList: #zlist:
 
-            if zval > z:
+            if zprime >= z:
 
  #               print "In calcIntegrationArray, checking z: ", zval
 
-                outarray.append(self.lensingWeightFunctionIntegrand(zval, z, numList, orgList)) 
+                outarray.append(self.lensingWeightFunctionIntegrand(zprime, z, numList, orgList)) 
 
         return outarray
 
@@ -164,7 +180,11 @@ class lensingClass(object):
         Calculates and then returns angular diameter distance for z2
         """
         doubletAngularDiameterDistanceCosmocalcs.setEmissionRedShift(z2)
-        DM2 = doubletAngularDiameterDistanceCosmocalcs.AngularDiameterDistance()
+
+	if self.units == 1:
+        	DM2 = doubletAngularDiameterDistanceCosmocalcs.TransComovDistanceMpc()
+	else:
+		DM2 = doubletAngularDiameterDistanceCosmocalcs.TransComovDistance()
 
         doubletAngularDiameterDistanceCosmocalcs = cosmocalcs.cosmologyCalculator(self.h, self.omegams[1], self.omegams[2], self.wX, self.wXa)
 
@@ -172,16 +192,28 @@ class lensingClass(object):
         Calculates and then returns angular diameter distnace for z1
         """
         doubletAngularDiameterDistanceCosmocalcs.setEmissionRedShift(z1)
-        DM1 = doubletAngularDiameterDistanceCosmocalcs.AngularDiameterDistance()
+
+	if self.units == 1:
+        	DM1 = doubletAngularDiameterDistanceCosmocalcs.TransComovDistanceMpc()
+	else:
+        	DM1 = doubletAngularDiameterDistanceCosmocalcs.TransComovDistance()		
 
         """
         """
-        DH = 1/(1 + z2)
+
+	if self.units == 1:	
+        	DH = 100.0/self.h
+	else:
+		DH = 100.0/self.h
 
         """
         Calculates total angular diameter distance between two redshifts
         """
-        DA12 = 1/(1 + z2) * (DM2*pow(1 + omegamat*pow(DM1, 2)/pow(DH, 2), 0.5) - DM1*pow(1 + omegamat*pow(DM1, 2)/pow(DH, 2), 0.5))
+        DA12 = 1/(1 + z2) * (DM2*pow(1 + omegamat*pow(DM1, 2)/pow(DH, 2), 0.5) - DM1*pow(1 + omegamat*pow(DM2, 2)/pow(DH, 2), 0.5))
+
+#	f4 = open('dd.txt', 'a')
+#	f4.write(str(DA12) + '\n')
+#	f4.close()
 
         return DA12
 
@@ -195,79 +227,61 @@ class lensingClass(object):
 
         print "Beginning of lensingWeightFunction\n"
 
-        from scipy.integrate import simps
+        #from scipy.integrate import simps
 
         omegamat = 0.3
-                        
-	#orgList, numList = self.organizeRedshifts(lensingzlist)
-
-        """for z in lensingzlist[1:len(lensingzlist)-1]:
-
-            print "z is: ", z 
-
-            init_cosmologyCalculator = cosmocalcs.cosmologyCalculator(self.h, self.omegams[1], self.omegams[2], self.wX, self.wXa)
-
-            init_cosmologyCalculator.setEmissionRedShift(z)
-            D_A = init_cosmologyCalculator.AngularDiameterDistance()
-
-            print "calculating integrand array"
-
-            #integrand = self.calcIntegrationArray(z, lensingzlist)
-            integrand = self.calcIntegrationArray(z, lensingzlist, numList)
-
-            print "integrating now"
-
-            print "Size of integrand is ", len(integrand)
-
-            print "Size of x vals is ", len([i for i in orgList[0:len(orgList)-1] if i >= z])
-
-            print "\n\n\n\n"
-
-            print "Integrand is: ", integrand
-            print "x is: ", [i for i in orgList if i >= z]
-
-            W = simps(integrand, [i for i in orgList[0:len(orgList)-1] if i >= z]) 
-
-            W *= 3/2*omegamat*self.h*self.h*(1 + self.z)*D_A*W
-
-            print "W is ", W
-
-            f.write(str(z) + "\t" + str(W) + "\n")
-
-        f.close()"""
-
 
         print "z is: ", zlim
 
         init_cosmologyCalculator = cosmocalcs.cosmologyCalculator(self.h, self.omegams[1], self.omegams[2], self.wX, self.wXa)
 
         init_cosmologyCalculator.setEmissionRedShift(zlim)
-        D_A = init_cosmologyCalculator.AngularDiameterDistance()
+
+	if self.units == 1:
+        	D_A = init_cosmologyCalculator.AngularDiameterDistanceMpc()
+	else:
+        	D_A = init_cosmologyCalculator.AngularDiameterDistance()
 
         print "calculating integrand array"
 
         integrand = self.calcIntegrationArray(zlim, lensingzlist, numList)
 
         print "integrating now"
-
         print "Size of integrand is ", len(integrand)
-
         print "Size of x vals is ", len([i for i in orgList[0:len(orgList)-1] if i >= zlim])
-
         print "\n\n\n\n"
 
-#        print "Integrand is: ", integrand
-#        print "x is: ", [i for i in orgList if i >= zlim]
+	x = [i for i in orgList[0:len(orgList)] if i >= zlim]
 
-        W = simps(integrand, [i for i in orgList[0:len(orgList)-1] if i >= zlim]) 
+	xfile = open('x.txt', 'a')
+	for xxt in x:
+		xfile.write(str(xxt) + '\t')
+	xfile.write('\n')
+	xfile.close()
 
-        W *= 3/2*omegamat*self.h*100*100*self.h*(1 + zlim)*D_A*W/300000
+	W = 0
 
+	for i in range(len(integrand) - 1):
+
+		W += (integrand[i+1] + integrand[i])/2.0*(x[i+1] - x[i])
+
+        #W = simps(integrand, [i for i in orgList[0:len(orgList)-1] if i >= zlim]) 
+
+	f1 = open('W.txt', 'a')
+	f1.write('W_i: ' + str(W) + '\t' + 'D_A: ' + str(D_A) + '\t' + '3/2*omegamat*(1+z): ' + str(3/2*omegamat*(1+zlim)) + '\n')
+	f1.close()
+
+        #W *= 3/2*omegamat*1/self.h*(1 + zlim)*D_A*W*3*pow(10, -4)
+        W *= 3/2*omegamat*(1 + zlim)*D_A*W
         print "W is ", W
 
         return W
 
     def organizeRedshifts(self, zlist):
+
+	from numpy import roll
+
+	print "Number of galaxies found is: ", len(zlist)
 
         orgList = []
         numList = []
@@ -275,7 +289,7 @@ class lensingClass(object):
         minList = min(zlist)
         maxList = max(zlist)
 
-        delta = (maxList - minList)/self.numbins
+        delta = (maxList - minList)/(self.numbins-1)
 
 	binVal = minList
 
@@ -289,6 +303,8 @@ class lensingClass(object):
 
 		numList.append(0)
 
+	count = 0
+
 	for i in range(len(zlist)):
 
 		for j in range(self.numbins - 1):
@@ -296,57 +312,79 @@ class lensingClass(object):
 			if zlist[i] >= orgList[j] and zlist[i] < orgList[j+1]:
 
 				numList[j] += 1
+				count += 1
 
-        """for i in range(1, 100):
 
-            orgList.append(listVal)
-            #numList.append(len([val for val in listVal if val >= listVal and val < listVal + delta]))
+	ff = open('hist.txt', 'w')
 
-	    for i in range(listVal):
+	ff.write('orgList: ' + str(orgList) + '\n')
+	ff.write('numList: ' + str(numList) + '\n')
+	ff.write('Number of galaxies found: ' + str(len(zlist)) + '\n')
+	ff.write('Number of galaxies sorted: ' + str(count) + '\n')
 
-		if 
+	ff.close()
 
-            #listVal += delta
-	"""
-
-#	print "Printing orgList !", orgList
+	#numList = roll(numList, 50)
 
         return orgList, numList
 
-        #        integrand = lambda x: cosmocalcs.calcAngularDistance(z, x)/cosmocalcs.calcAngularDistance(z)#*n_i(x)
 
     def n_i(self, z, numList, orgList):
 
+	f2 = open('n_i.txt', 'a')
+
         from numpy import linspace
-        from scipy.integrate import simps
 
-#        delta = orgList[1] - orgList[0]
+	n_z = 0
+	deltax = []
+	integrand = []
+	savedi = 0
 
-#        low = min([i for i in orgList if i >= orgList and i < orgList + delta])
-
-        n_z = -100000000
-
-        for i in range(self.numbins - 1):
+        for i in range(len(orgList) - 1):
 
             if z >= orgList[i] and z < orgList[i+1]:
 
-                x = linspace(orgList[i], orgList[i+1], 20)
+		savedi = i
 
-                integrand = []
+		f2.write('i: ' + str(i) + '\t' + 'orgList[i]: ' + str(orgList[i]) + '\t' + 'orgList[i+1]: ' + str(orgList[i+1]) + '\t' + 'numList[savedi]/265600/(orgList[1] - orgList[0]): ' + str(numList[savedi]/265600.*1/(orgList[1] - orgList[0])) + '\t')
+
+                ##x = linspace(orgList[i], orgList[i+1], 50)
+		x = linspace(min(orgList), max(orgList), 10000)
 
                 for x_prime in x:
                 
-                    integrand.append(self.gaussFit(x_prime, z))
+		    if x_prime >= orgList[i] and x_prime <= orgList[i+1]:
 
-                n_z = simps(integrand, x)
+		        integrand.append(self.gaussFit(x_prime, z))
 
-        return n_z*pow(z, 2)*math.exp(-pow(z/0.25, 2))
-#        return pow(z, 2)*math.exp(-pow(z/0.25, 2))
+		for tempxval in range(len(integrand) - 1):
 
+			n_z += (integrand[tempxval+1] + integrand[tempxval])/2.0*(x[tempxval+1] - x[tempxval])
+
+                #n_z = simps(integrand, x)
+		deltax = x[tempxval+1] - x[tempxval];
+
+		break
+
+
+	f2.write('n: ' + str(numList[savedi]) + '\t' + 'z: ' + str(z) + '\t' + 'n_z: ' + str(n_z) + '\t' + 'deltax: ' + str(deltax) + '\t')
+
+	f2.write('integrand[i]: ')
+
+#	for intg in integrand:
+
+#		f2.write(str(intg) + '\t')
+
+	f2.write('\n\n')
+	f2.close()
+
+        #return 4000*n_z*pow(z, 2)*math.exp(-pow(z/self.z_0, 1.2))
+	#return numList[savedi]/265600.*1./(orgList[1] - orgList[0])*n_z
+	return numList[savedi]/265600.
 
     def gaussFit(self, x, z_0):
 
-        return math.exp(-pow(x - z_0, 2)/(2*pow(self.width, 2)))
+        return math.exp(-pow(x - z_0, 2)/(2*pow(self.width/2, 2)))/(pow(2*math.pi, 0.5)*self.width/2)
 
     def calcPowerSpectrum(self):
 
@@ -355,35 +393,34 @@ class lensingClass(object):
 
         ps = powerspec.transferFunction(1, 1, 1)
 
-	f = open('PowerSpectrum_results.txt', 'w')
+ 	f = open('results.txt', 'w')
 
-	f.write("z" + '\t' + "Wval" + "\t" + "PS" + '\n')
+	print "Initializing lc class\n"
 
-	lc = lensingClassFile.lensingClass(0)
+    	lc = lensingClassFile.lensingClass(0)
+
+	print "Extracting redshifts from DLS data"
 
 	F2redshifts = lc.getRedshiftsFromDLS()
 
 	organizedList, numberedList = lc.organizeRedshifts(F2redshifts)
 
+	print "Printing the organized list after organizeRedshifts function call"
+	print "OrgList is: ?", organizedList
+
+	print "Sorting redshift values"
+
 	sortedF2Redshifts = lc.sort_Redshift_Values(organizedList)
 
-	Wval = []
-
-	i = 1
-
-	for z in sortedF2Redshifts:
+	for z in sortedF2Redshifts[1:len(sortedF2Redshifts) - 1]:
 
 		print "Determining lensing weight function at z: ", z
         
-		Wval.append(lc.lensingWeightFunction(sortedF2Redshifts, organizedList, numberedList))
+		Wval = lc.lensingWeightFunction(z, sortedF2Redshifts, organizedList, numberedList)
         
-		f.write(z + '\t' + Wval[i] + '\n')
-
-		i += 1      
-
+		f.write(str(z) + '\t' + str(Wval) + '\n')
+      
 	f.close()
-
-        return Wval
 
 
 
