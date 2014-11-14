@@ -22,20 +22,22 @@ class lensingClass(object):
     def __init__(self, z):
 
         self.z = z
-        self.numbins = 100
-	self.integrationbins = 50
-	self.z_0 = 0.05
+        self.numbins = 100                # Number of bins to sort redshifts in
+	self.integrationbins = 50         # Number of integration steps to determine gaussian probability
+	self.z_0 = 0.05               
 
-	self.units = 0 #1 for Mpc
+	self.units = 0                    # 1 for Mpc unit calculations
 
-	self.h = 0.7
+	self.h = 0.7                      # Hubble parameters
 
         self.omegams = [0.3, 0.7, 0.05]
-        self.wX=-1. # dark energy equation of state today
-        self.wXa=0. # dark energy equation of state evolution
-#        self.width = .01
-        self.width = .05
+        self.wX=-1.                       # dark energy equation of state today
+        self.wXa=0.                       # dark energy equation of state evolution
+	self.width = .05                  # Redshift width for Gaussian probability function
 
+    """
+	Extracts redshifts from DLS data files
+    """
     def getRedshiftsFromDLS(self):
         
         # wcs info
@@ -76,6 +78,7 @@ class lensingClass(object):
         print F2datacube
         print "\n\n"
 
+	# Extract redshift field from file
         #redshiftListF1 = F1datacube[3]
         redshiftListF2 = F2datacube.field(1)
         #redshiftListF3 = F3datacube[3]
@@ -100,6 +103,9 @@ class lensingClass(object):
 
     """
     Integrand for weight function integration to be used in lensingWeight Function
+
+    \int_{z}^{\inf} \ frac{D(z, z^')}{D(z^')} n_i(z^') dz^'
+
     """
     def lensingWeightFunctionIntegrand(self, zprime, z, numList, orgList):
 
@@ -121,16 +127,15 @@ class lensingClass(object):
 	else:
 		D_A = redShiftCosmocalcs.AngularDiameterDistance()
 
+	# Prints integrand components to file for debugging
 	oi = open('integrand_components.txt', 'a')
-
         n_save = self.n_i(zprime, numList, orgList)
-	
 	oi.write('z: ' + str(z) + '\t' + 'z\': ' + str(zprime) + '\t' + 'D_Z: ' + str(D_A) + '\t' + 'DD_A: ' + str(self.doubletAngularDiameterDistance(z, zprime)) +'\t' + 'n_i: ' + str(n_save) + '\n')
-
 	oi.close()
 
+
 	"""
-	Returns integration integrand for power spectrum calculation
+	Returns integration integrand for lensing weight function calculation
 	"""
         return self.doubletAngularDiameterDistance(z, zprime)/D_A*n_save
 
@@ -138,21 +143,24 @@ class lensingClass(object):
 
     """
     Returns integration integrand list.
+
+    \int_{z}^{\inf} \ frac{D(z, z^')}{D(z^')} n_i(z^') dz^'
     """
     def calcIntegrationArray(self, z, orgList, numList):
 
 	"""
 	Calculates array used as integrand in the integration to determine the lensing weight function
 
-        Requires input of the redshift to calculate the weight function with respect to, and the binned redshift values and density list. 
+        Requires input of the redshift to calculate the weight function with respect to, and the binned 
+		redshift values and density list. 
         Outputs the integrand list.
 	"""
 
         outarray = []
 
-#	print "Printing orgList: ", orgList
-
-        for zprime in orgList: #zlist:
+	# Loops through the binned redshift list, appends to the integration array for redshifts >= the
+	#     source redshift
+        for zprime in orgList: 
 
             if zprime >= z:
 
@@ -202,9 +210,9 @@ class lensingClass(object):
         """
 
 	if self.units == 1:	
-        	DH = 100.0/self.h
+        	DH = 1.
 	else:
-		DH = 100.0/self.h
+		DH = 3000.0/self.h
 
         """
         Calculates total angular diameter distance between two redshifts
@@ -253,12 +261,6 @@ class lensingClass(object):
 
 	x = [i for i in orgList[0:len(orgList)] if i >= zlim]
 
-	xfile = open('x.txt', 'a')
-	for xxt in x:
-		xfile.write(str(xxt) + '\t')
-	xfile.write('\n')
-	xfile.close()
-
 	W = 0
 
 	for i in range(len(integrand) - 1):
@@ -272,11 +274,16 @@ class lensingClass(object):
 	f1.close()
 
         #W *= 3/2*omegamat*1/self.h*(1 + zlim)*D_A*W*3*pow(10, -4)
-        W *= 3/2*omegamat*(1 + zlim)*D_A*W
+        W *= 3/2*omegamat*100*100*self.h*self.h*(1 + zlim)*D_A*W
         print "W is ", W
 
         return W
 
+    """
+	Organizes the redshifts into a set of binned arrays.
+
+ 	Outputs orgList, a set of binned redshifts, and numList, the number of source galaxies within each bin
+    """
     def organizeRedshifts(self, zlist):
 
 	from numpy import roll
@@ -328,7 +335,9 @@ class lensingClass(object):
 
         return orgList, numList
 
-
+    """
+	Calculates the probability of finding a galaxy of certain redshift within a bin
+    """
     def n_i(self, z, numList, orgList):
 
 	f2 = open('n_i.txt', 'a')
@@ -340,23 +349,27 @@ class lensingClass(object):
 	integrand = []
 	savedi = 0
 
+	# Runs through all the binned redshifts, determines which bin the redshift is associated with
         for i in range(len(orgList) - 1):
 
             if z >= orgList[i] and z < orgList[i+1]:
 
 		savedi = i
 
+		# Writes components to file for debugging
 		f2.write('i: ' + str(i) + '\t' + 'orgList[i]: ' + str(orgList[i]) + '\t' + 'orgList[i+1]: ' + str(orgList[i+1]) + '\t' + 'numList[savedi]/265600/(orgList[1] - orgList[0]): ' + str(numList[savedi]/265600.*1/(orgList[1] - orgList[0])) + '\t')
 
                 ##x = linspace(orgList[i], orgList[i+1], 50)
 		x = linspace(min(orgList), max(orgList), 10000)
 
+		# Creates gaussian probability array for integration
                 for x_prime in x:
                 
 		    if x_prime >= orgList[i] and x_prime <= orgList[i+1]:
 
 		        integrand.append(self.gaussFit(x_prime, z))
 
+		# Integrates this to determine P(z'|z)
 		for tempxval in range(len(integrand) - 1):
 
 			n_z += (integrand[tempxval+1] + integrand[tempxval])/2.0*(x[tempxval+1] - x[tempxval])
@@ -367,25 +380,24 @@ class lensingClass(object):
 		break
 
 
-	f2.write('n: ' + str(numList[savedi]) + '\t' + 'z: ' + str(z) + '\t' + 'n_z: ' + str(n_z) + '\t' + 'deltax: ' + str(deltax) + '\t')
-
-	f2.write('integrand[i]: ')
-
-#	for intg in integrand:
-
-#		f2.write(str(intg) + '\t')
-
-	f2.write('\n\n')
+	f2.write('n: ' + str(numList[savedi]) + '\t' + 'z: ' + str(z) + '\t' + 'n_z: ' + str(n_z) + '\t' + 'deltax: ' + str(deltax) + '\n\n')
 	f2.close()
 
         #return 4000*n_z*pow(z, 2)*math.exp(-pow(z/self.z_0, 1.2))
 	#return numList[savedi]/265600.*1./(orgList[1] - orgList[0])*n_z
 	return numList[savedi]/265600.
 
+    """
+	Returns a gaussian probability cetered at z_0 at point x with a given width (normalized)
+    """
     def gaussFit(self, x, z_0):
 
         return math.exp(-pow(x - z_0, 2)/(2*pow(self.width/2, 2)))/(pow(2*math.pi, 0.5)*self.width/2)
 
+
+    """
+	Intended to be further code for power spectrum calculations
+    """
     def calcPowerSpectrum(self):
 
 
