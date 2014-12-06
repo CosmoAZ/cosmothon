@@ -5,20 +5,19 @@ import cosmocalcs
 import lensingClassFile
 import numpy 
 import matplotlib.pyplot as plt
+from numpy import roll
 
 def main(argv):
     print ''
     print '=== Running lensing.py program ===='
-
-    """
-    ##################    
+    """##################    
 
     lc = lensingClassFile.lensingClass(0)
 
     lc.calcPowerSpectrum()
 
-    ###################
-    """
+    ###################"""
+
     f = open('results.txt', 'w')
 
     print "Initializing lc class\n"
@@ -33,8 +32,36 @@ def main(argv):
 
     print "Printing the organized list after organizeRedshifts function call"
     print "OrgList is: ?", organizedList
-
     print "Sorting redshift values"
+
+    sortedF2Redshifts = lc.sort_Redshift_Values(organizedList)
+    #sortedF2Redshifts = lc.sort_Redshift_Values(F2redshifts[::20])
+
+    Warray = []
+    tempW = []
+    Zarray = []
+
+    for z in sortedF2Redshifts[1:len(sortedF2Redshifts) - 1]:
+
+        print "Determining lensing weight function at z: ", z
+        
+        Wval, tempWval = lc.lensingWeightFunction(z, sortedF2Redshifts, organizedList, numberedList)
+
+        Warray.append(Wval)
+        Zarray.append(z)
+        tempW.append(tempWval)
+
+        f.write(str(z) + '\t' + str(Wval) + '\n')
+      
+    #f.close()
+    
+    plt.plot(Zarray, Warray, 'g--')
+
+    ###############################################################
+    """
+    numberedList = roll(numberedList, 50)
+
+    lc = lensingClassFile.lensingClass(0)
 
     sortedF2Redshifts = lc.sort_Redshift_Values(organizedList)
 
@@ -44,30 +71,39 @@ def main(argv):
     for z in sortedF2Redshifts[1:len(sortedF2Redshifts) - 1]:
 
         print "Determining lensing weight function at z: ", z
-        
+
         Wval = lc.lensingWeightFunction(z, sortedF2Redshifts, organizedList, numberedList)
 
         Warray.append(Wval)
-
         Zarray.append(z)
 
         f.write(str(z) + '\t' + str(Wval) + '\n')
-      
-    f.close()
-    
+
     plt.plot(Zarray, Warray, 'g--')
+    """
 
     plt.xlabel('Redshift')
-
     plt.ylabel('W(z)')
-
     plt.title('Lensing Weight Function vs. Redshift')
-
     plt.axis([min(Zarray), max(Zarray), min(Warray), max(Warray)])
 
     plt.grid(True)
 
     plt.savefig('WvsZ.png')
+
+    f.close();
+
+    plt.close()
+
+    plt.plot(Zarray, tempW, 'g--')
+    plt.xlabel('Redshift')
+    plt.ylabel('\\frac{Da(z\') - Da(z)}{Da(z\')}')
+    plt.title('\\frac{Da(z\') - Da(z)}{Da(z\')} vs. Redshift')
+    plt.axis([min(Zarray), max(Zarray), min(tempW), max(tempW)])
+
+    plt.grid(True)
+
+    plt.savefig('WunitsvsZ.png')
 
 
 if __name__ == "__main__":

@@ -269,7 +269,8 @@ class powerSpectrum(object):
          
         self.omega_m = self.transfunc.omega_m
         self.h = self.transfunc.h
-        self.omega_b = self.transfunc.omega_b
+        #self.h = 0.7
+	self.omega_b = self.transfunc.omega_b
         self.omega_l=self.grofunc.omega_l
         
         self.kpivot = 0.05
