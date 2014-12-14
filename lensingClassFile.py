@@ -22,7 +22,7 @@ class lensingClass(object):
     def __init__(self, z):
 
         self.z = z
-        self.numbins = 100                # Number of bins to sort redshifts in
+        self.numbins = 1000                # Number of bins to sort redshifts in
 	self.integrationbins = 50         # Number of integration steps to determine gaussian probability
 	self.z_0 = 0.05               
 
