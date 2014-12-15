@@ -22,7 +22,7 @@ class lensingClass(object):
     def __init__(self, z):
 
         self.z = z
-        self.numbins = 1000                # Number of bins to sort redshifts in
+        self.numbins = 100                # Number of bins to sort redshifts in
 	self.integrationbins = 50         # Number of integration steps to determine gaussian probability
 	self.z_0 = 0.05               
 
@@ -336,7 +336,7 @@ class lensingClass(object):
 				count += 1
 
 
-	ff = open('hist.txt', 'w')
+	"""ff = open('hist.txt', 'w')
 
 	ff.write('orgList: ' + str(orgList) + '\n')
 	ff.write('numList: ' + str(numList) + '\n')
@@ -351,7 +351,7 @@ class lensingClass(object):
 	tempList = orgList
 
 	#orgList = linspace(0,5,200)
-	import matplotlib.pyplot as plt
+	import matplotlib.pyplot as plt"""
 	##################################################
 
 	"""
@@ -541,7 +541,7 @@ class lensingClass(object):
 
 	##################################################"""
 
-	n, bins, patches = plt.hist(zlist, 100, facecolor='g', alpha = 0.75)
+	"""n, bins, patches = plt.hist(zlist, 100, facecolor='g', alpha = 0.75)
 
 
 	import math
@@ -566,7 +566,7 @@ class lensingClass(object):
 	plt.savefig('RedshiftsF2.png')
 	plt.close()
 	
-	orgList = tempList
+	orgList = tempList"""
 
 	#sys.exit()
 
