@@ -7,12 +7,19 @@ from numpy import linspace
 from numpy import logspace
 from scipy.integrate import quad
 from scipy.interpolate import interp1d
+import shearPS
 
 def main(argv):
     print ''
     print '=== Running convolutionPS.py program ====\n'
 
     print argv
+
+    h = float(argv[1])
+    omegamat = float(argv[3])
+    omegaDE = float(argv[5])
+
+    shearPS.main(['-n', 1, '-i', 0, '-j', 0, '-h', h, '-omegamat', omegamat, '-omegaDE', omegaDE])
 
     larray = []
     Pkarray = []
@@ -31,7 +38,7 @@ def main(argv):
     e_minus = []
 
     #theta = linspace(1/60.0*math.pi/180.0, 100.0/60.0*math.pi/180.0, 30)
-    theta = logspace(log10(0.01/60.0*math.pi/180.0), log10(100.0/60.0*math.pi/180.0), 300)
+    theta = logspace(log10(0.01/60.0*math.pi/180.0), log10(100.0/60.0*math.pi/180.0), 30)
 
     P_l = interp1d(larray, Pkarray)
 

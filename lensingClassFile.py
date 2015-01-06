@@ -19,9 +19,8 @@ class lensingClass(object):
     """
     Initialization of z value by class call
     """
-    def __init__(self, z):
+    def __init__(self, h = 0.7, omegamat=0.2, omegaDE=0.8):
 
-        self.z = z
         self.numbins = 100                # Number of bins to sort redshifts in
 	self.integrationbins = 50         # Number of integration steps to determine gaussian probability
 	self.z_0 = 0.05               
@@ -29,9 +28,9 @@ class lensingClass(object):
 	self.units = 1                    # 1 for Mpc unit calculations
 	self.numgalaxies = 0
 
-	self.h = 0.7                      # Hubble parameters
+	self.h = h                        # Hubble parameters
 
-        self.omegams = [0.2, 0.8, 0.05]
+        self.omegams = [omegamat, omegaDE, 0.05]
         self.wX=-1.                       # dark energy equation of state today
         self.wXa=0.                       # dark energy equation of state evolution
 	self.width = .05                  # Redshift width for Gaussian probability function
