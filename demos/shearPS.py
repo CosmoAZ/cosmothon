@@ -1,14 +1,17 @@
 import sys
 import shearPSFile
+import time
 
 def main(argv):
     print ''
     print '=== Running nonlinearPS.py program ====\n'
     print argv
 
+    start = time.time()
+
+    shearBins = int(argv[1])
     i = int(argv[3])
     j = int(argv[5])
-    shearBins = int(argv[1])
     h = float(argv[7])
     omegamat = float(argv[9])
     omegaDE = float(argv[11])   
@@ -29,14 +32,15 @@ def main(argv):
     print "Number of bins is: ", shearBins, " i is: ", i, " j is: ", j
 
     shearPSClass = shearPSFile.shearCalcClass(shearBins, i, j, h, omegamat, omegaDE)
-    Pk_l = shearPSClass.shearPSCalc()
-    #shearPSClass.printPSResults()
+    Pk_l, l = shearPSClass.shearPSCalc()
+    #shearPSClass.printPSResults(Pk_l, l)
 
     #Convolution calculation
     convolutionClassObj = shearPSFile.convolutionClass(shearBins, i, j, h, omegamat, omegaDE)
-    e_plus, e_minus, theta = convolutionClassObj.convolutionCalc(Pk, l)
+    e_plus, e_minus, theta = convolutionClassObj.convolutionCalc(Pk_l, l)
     convolutionClassObj.printCCresults(e_plus, e_minus, theta)
 
+    print "Total computation time was: ", time.time() - start
 
 
 if __name__ == "__main__":

@@ -22,7 +22,9 @@ class transferFunction(object):
     def __init__(self, omega_cdm=0.25, omega_b=0.05, h=1.):
 
         if (omega_cdm<0. or omega_b<0. or h<0.):
-            return -1
+		print "WHAT THE HELL HAPPENED HERE?  OH SHIT, WHAT DID YOU DO, AARON?"            
+		#omega_cdm = 0.0		
+		return -1
 
         # constructor arguments
         self.omega_c = omega_cdm
@@ -36,6 +38,7 @@ class transferFunction(object):
         self.th2p7 = const.T_CMB_K/2.7
         th2p7P4 = self.th2p7*self.th2p7*self.th2p7*self.th2p7
 
+	print("transfClass: Omegamat:  " + str(self.omega_m) + "\t\t\t\t\t\tOmega_cdm:\t" + str(self.omega_c) + "\tOmega_b:\t" + str(self.omega_b))
 
         # Initalization of calculated quantities
 
@@ -204,14 +207,18 @@ class growthFunctionLCDM(object):
     # @param omega_m
     # @param omega_l
     def __init__(self, omega_m=0.25, omega_l=0.75):
-    
+
+	if (omega_m < 0.0): 
+		omega_m = 0.0;
+
         self.omega_m = omega_m
         self.omega_l = omega_l
         self.omega_k = 1. - self.omega_m - self.omega_l
         self.D0 = 1. # temporarily set to 1
         self.D0 = self.getGrowth(0.)
         
-        
+       	print("growthClass: Omegamat:\t" + str(self.omega_m) + "  Omega_DE:\t" + str(self.omega_l))
+
     ## Return growth at redshift z (normalized to 1 at z=0)
     # @param z    redshift
     def getGrowth(self, z):
@@ -258,21 +265,23 @@ class powerSpectrum(object):
         self.ns = ns
         self.DelRsq = DelRsq
         
-        if (self.transfunc.omega_m != self.grofunc.omega_m):
+        if (self.transfunc.omega_m < self.grofunc.omega_m - 0.0000001 or self.transfunc.omega_m > self.grofunc.omega_m + 0.0000001):
             print 'Transfer function Omega_m =',self.transfunc.omega_m,
             print 'not equal to growth function Omega_m =',self.grofunc.omega_m
             return None
          
-        print 'Transfer function has parameters Omega_m =',self.transfunc.omega_m,'and h =',self.transfunc.h
-        print 'Growth function has parameters Omega_m =',self.grofunc.omega_m,
-        print 'and Omega_L =',self.grofunc.omega_l
+        #print 'Transfer function has parameters Omega_m =',self.transfunc.omega_m,'and h =',self.transfunc.h
+        #print 'Growth function has parameters Omega_m =',self.grofunc.omega_m,
+        #print 'and Omega_L =',self.grofunc.omega_l
          
         self.omega_m = self.transfunc.omega_m
         self.h = self.transfunc.h
         #self.h = 0.7
 	self.omega_b = self.transfunc.omega_b
         self.omega_l=self.grofunc.omega_l
-        
+
+       	print("powerClass:  Omegamat:\t" + str(self.omega_m) + "\tOmega_DE:\t" + str(self.omega_l) + "\t\t\t\t\t\tOmega_b:\t" + str(self.omega_b))
+
         self.kpivot = 0.05
         self.Apiv = 8.0967605e7
         
@@ -306,7 +315,7 @@ class powerSpectrum(object):
     # Return k normalized to pivot scale
     def kNorm(self, k):
         return (self.h*k)/self.kpivot
-        
+        #return (0.7*k)/0.05
     
     # Return Hubble constant to the fourth power
     def hpower4(self):

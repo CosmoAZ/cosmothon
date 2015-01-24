@@ -6,6 +6,7 @@ import lensingClassFile
 import numpy 
 import matplotlib.pyplot as plt
 from numpy import roll
+#import time
 
 def main(argv):
     print ''
@@ -17,8 +18,6 @@ def main(argv):
     lc.calcPowerSpectrum()
 
     ###################"""
-
-    f = open('results.txt', 'w')
 
     print "Initializing lc class\n"
 
@@ -38,25 +37,21 @@ def main(argv):
     #sortedF2Redshifts = lc.sort_Redshift_Values(F2redshifts[::20])
 
     Warray = []
-    tempW = []
     Zarray = []
 
-    for z in sortedF2Redshifts[1:len(sortedF2Redshifts) - 1]:
+    for z in sortedF2Redshifts:#[0:len(sortedF2Redshifts) - 1]:
 
         print "Determining lensing weight function at z: ", z
         
-        Wval, tempWval = lc.lensingWeightFunction(z, sortedF2Redshifts, organizedList, numberedList)
+	#start = time.time()
+        Wval = lc.lensingWeightFunction(z, sortedF2Redshifts, organizedList, numberedList)
+	#end = time.time()
+
+	print "W is: ", Wval
 
         Warray.append(Wval)
         Zarray.append(z)
-        tempW.append(tempWval)
-
-        f.write(str(z) + '\t' + str(Wval) + '\n')
-      
-    #f.close()
     
-    plt.plot(Zarray, Warray, 'g--')
-
     ###############################################################
     """
     numberedList = roll(numberedList, 50)
@@ -81,21 +76,16 @@ def main(argv):
 
     plt.plot(Zarray, Warray, 'g--')
     """
-
+    plt.plot(Zarray, Warray, 'g--')
     plt.xlabel('Redshift')
     plt.ylabel('W(z)')
     plt.title('Lensing Weight Function vs. Redshift')
     plt.axis([min(Zarray), max(Zarray), min(Warray), max(Warray)])
-
     plt.grid(True)
-
     plt.savefig('WvsZ.png')
-
-    f.close();
-
     plt.close()
 
-    plt.plot(Zarray, tempW, 'g--')
+    """plt.plot(Zarray, tempW, 'g--')
     plt.xlabel('Redshift')
     plt.ylabel('\\frac{Da(z\') - Da(z)}{Da(z\')}')
     plt.title('\\frac{Da(z\') - Da(z)}{Da(z\')} vs. Redshift')
@@ -103,7 +93,7 @@ def main(argv):
 
     plt.grid(True)
 
-    plt.savefig('WunitsvsZ.png')
+    plt.savefig('WunitsvsZ.png')"""
 
 
 if __name__ == "__main__":
