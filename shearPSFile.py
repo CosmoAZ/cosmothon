@@ -10,7 +10,7 @@ import math
 
 class shearCalcClass(object):
 
-	def __init__(self, shearBins=1, i=0, j=1, h=0.7, omegamat=0.3, omegaDE=0.7):
+	def __init__(self, shearBins=1, i=0, j=1, h=0.7, omegamat=0.3, omegaDE=0.7, nlistp=[0]):
 		self.i = i
 		self.j = j
 		self.shearBins = shearBins
@@ -19,7 +19,11 @@ class shearCalcClass(object):
 		self.omegaDE = omegaDE
 		self.ns = 0.96
 		self.DelRsq = 2.1e-9
-		self.nummulipoles = 1000
+		self.nummulipoles = 20000
+		self.nlistp = nlistp
+		#print("\n\nPrinting nlistp\n\n")
+		#print nlistp
+		#print("\n\nPrinting nlistp\n\n")
 		
 	def shearPSPrePrep(self, F2redshifts):
 		print("\nshearClass:  Omegamat:\t" + str(self.omegamat) + "  OmegaDE:\t" + str(self.omegaDE))
@@ -27,9 +31,9 @@ class shearCalcClass(object):
 			print "i or j (bin number) is greater than the number of Shear bins: ", self.shearBins
 			return
 
-		lc = lensingClassFile.lensingClass(self.h, self.omegamat, self.omegaDE)
+		lc = lensingClassFile.lensingClass(self.h, self.omegamat, self.omegaDE, self.nlistp)
 
-		larray = logspace(math.log10(1), math.log10(1e7), self.nummulipoles)
+		larray = logspace(math.log10(1), math.log10(1e8), self.nummulipoles)
 		pKij = []
 
 		#F2redshifts = lc.getRedshiftsFromDLS()    	
@@ -79,10 +83,11 @@ class shearCalcClass(object):
 
 				Warrayi.append(Wvali)
 				Warrayj.append(Wvalj)
-		#print "Size of Warray: ", len(Warrayi), "\nSize of sortedzttiarray: ", len(sortedzttiarray[0:len(Warrayi)])
-		#lc.plotWZ(sortedzttiarray[0:len(Warrayi)], Warrayi)
 
-		if (self.omegamat < lc.omegams[2]):		
+		#print "Size of Warray: ", len(Warrayi), "\nSize of sortedzttiarray: ", len(sortedzttiarray[0:len(Warrayi)])
+		lc.plotWZ(sortedzttiarray[0:len(Warrayi)], Warrayi)
+
+		if (self.omegamat < lc.omegams[2]):	
 			self.omegamat = lc.omegams[2]	
 
 		cosmoCalcs = cosmocalcs.cosmologyCalculator(lc.h, self.omegamat, self.omegaDE, lc.wX, lc.wXa)
@@ -123,7 +128,7 @@ class shearCalcClass(object):
 			#f.close()
 			#fg.close()
 
-		
+		self.printPSResults(pKij, larray)
 		return pKij,larray
 	
 
@@ -135,7 +140,7 @@ class shearCalcClass(object):
 
 		lc = lensingClassFile.lensingClass(self.h, self.omegamat, self.omegaDE)
 
-		larray = logspace(math.log10(1), math.log10(1e7), self.nummulipoles)
+		larray = logspace(math.log10(1), math.log10(1e8), self.nummulipoles)
 		pKij = []
 
 		F2redshifts = lc.getRedshiftsFromDLS()    	
@@ -226,7 +231,7 @@ class shearCalcClass(object):
 			#f.close()
 			#fg.close()
 
-		
+		self.printPSResults(pKij, larray)
 		return pKij,larray
 	
 	def printPSResults(self, pKij, larray):
@@ -278,10 +283,14 @@ class convolutionClass(object):
 		self.DelRsq = 2.1e-9
 		#print 'Initialization of convolutionClass'
 	
-	def convolutionCalc(self, Pkarray, larray):
-		
+	def convolutionCalc(self, Pkarray, larray):	
+
 		from scipy.special import jn as J
-		
+
+		bins = 10
+		from numpy import linspace		
+		limits = linspace(min(larray), max(larray), bins)
+
 		e_plus = []
 		e_minus = []
 
@@ -295,12 +304,60 @@ class convolutionClass(object):
 		
 		for t in theta:
 
-			e_p, errrop = quad(f_x, min(larray),  max(larray), args=(t,), epsabs = 1e-8, limit = 2000, full_output = False)
-			e_m, errrom = quad(f_x_m, min(larray),  max(larray), args=(t,), epsabs = 1e-8, limit = 2000, full_output = False)
+			e_m = 0.0
+			e_p = 0.0
+
+			for i in range(bins-1):
+				#e_p_, errrop = quad(f_x, min(larray),  max(larray), args=(t,), epsabs = 1e-10, limit = 3000, full_output = False)
+				e_p_, errrop = quad(f_x, limits[i],  limits[i+1], args=(t,), epsabs = 1e-11, limit = 2000, full_output = False)
+				e_p += e_p_
+
+				#e_m_, errrom = quad(f_x_m, min(larray),  max(larray), args=(t,), epsabs = 1e-10, limit = 3000, full_output = False)
+				e_m_, errrom = quad(f_x_m, limits[i],  limits[i+1], args=(t,), epsabs = 1e-11, limit = 2000, full_output = False)
+				e_m += e_m_
 
 			e_plus.append(e_p)
 			e_minus.append(e_m)
 			
+
+		e_prime = []
+		i = 0
+
+		for t in theta:
+
+			e_prime.append(e_minus[i])
+			j = 0
+
+			for tt in theta:
+	
+				if tt > t:
+
+					if j == len(theta) - 1:
+
+						e_prime[i] += 0#4*(e_minus[j]/2.0)*(theta[] - theta[1])/theta[j]
+						e_prime[i] -= 0#12 * t**2 * e_minus[j]*(theta[2] - theta[1])/(theta[j]**3)
+
+					else:
+
+						e_prime[i] += 4*(e_minus[j] + e_minus[j+1])/2.0*(theta[j+1] - theta[j])/theta[j]
+						e_prime[i] -= 12 * t**2 * (e_minus[j+1] + e_minus[j])/2.0*(theta[j+1] - theta[j])/(theta[j]**3)
+
+				j += 1
+
+			i += 1
+
+
+		for i in range(len(theta)):
+
+			e_plus[i] = (e_plus[i] + e_prime[i])/2.0
+			e_minus[i] = (e_plus[i] - e_prime[i])/2.0
+
+		#thetaDisplay = logspace(math.log10(1.0/60.0*math.pi/180.0), math.log10(100.0/60.0*math.pi/180.0), 30)
+		#e_arrayP = interp1d(e_plus, theta)
+		#e_arrayM = interp1d(e_minus, theta)
+		#eDisplayplus = e_arrayP(thetaDisplay)
+		#eDisplayminus = e_arrayM(thetaDisplay)
+
 		self.printCCresults(e_plus, e_minus, theta)#[180.0*math.pi*60.0*i for i in theta])
 
 		return e_plus, e_minus, theta
@@ -324,10 +381,8 @@ class convolutionClass(object):
 				
 		######################################
 		
-		#plt.plot(theta, e_minus, 'r-')
 		plt.plot(theta, e_plus, 'b-')
 		plt.plot(theta, edat, 'r*')
-		#plt.semilogy()
 		plt.semilogx()
 		plt.xlabel('theta')
 		plt.ylabel('e_plus/e_minus')
@@ -338,14 +393,13 @@ class convolutionClass(object):
 		plt.savefig('e_plus_minus.png')
 		plt.close()
 		
-		"""plt.plot(theta, e_minus, 'r-')
-		#plt.semilogy()
+		"""plt.plot(theta, edat, 'r*')
 		plt.semilogx()
-		#plt.xlabel('theta')
-		#plt.ylabel('e_minus')
-		#plt.title('e_minus vs. theta')
-		#plt.axis([0, max(theta), min(e_minus), max(e_minus)])
+		plt.xlabel('theta')
+		plt.ylabel('e_minus')
+		plt.title('e_minus vs. theta')
+		plt.axis([1, max(theta), -5e-5, 3e-4])#min(e_plus), max(e_plus)])
 		plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 		plt.grid(True)
-		plt.savefig('e_minus.png')
+		plt.savefig('e_dat.png')
 		plt.close()"""

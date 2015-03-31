@@ -18,9 +18,20 @@ print edat
 lcp = lensingClassFile.lensingClass(0.7, 0.3, 0.7)
 F2redshifts = lcp.getRedshiftsFromDLS()
 print "Calculating p(z)"
-orgList, numList = lc.organizeRedshifts(F2redshifts)
-nlistp = n_list(numList, orgList, F2redshifts)    	
+orgList, numList = lcp.organizeRedshifts(F2redshifts)
+nlistp = lcp.n_list(numList, orgList, F2redshifts)
+print "nlistp: "
+print nlistp
 print "Finished calculating p(z)"
+print "numlist:"
+print numList
+print "orgList:"
+print orgList    	
+
+
+print nlistp
+
+#sys.exit()
 
 def lnprior(phi):
 	omegamat = phi[0]
@@ -29,7 +40,7 @@ def lnprior(phi):
 		return -inf
 	return 0
 
-def lnlike(phi, theta, edat, F2red):
+def lnlike(phi, theta, edat, F2red, nlistp):
 
 	start = time.time()
 
@@ -38,30 +49,44 @@ def lnlike(phi, theta, edat, F2red):
 
 	#print("\nshearClacClass:  Omegamat:\t" + str(omegamat) + "  OmegaDE:\t" + str(omegaDE))
 	#e_plus = runshear.runshearPS(p[0], p[1]) 
-    	shearPSClass = shearPSFile.shearCalcClass(1, 0, 0, 0.7, omegamat, omegaDE)
+    	shearPSClass = shearPSFile.shearCalcClass(1, 0, 0, 0.673, omegamat, omegaDE, nlistp)
 	Pk_l, l = shearPSClass.shearPSPrePrep(F2red)
 
-    	convolutionClassObj = shearPSFile.convolutionClass(1, 0, 0, 0.7, omegamat, omegaDE)
+    	convolutionClassObj = shearPSFile.convolutionClass(1, 0, 0, 0.673, omegamat, omegaDE)
     	e_plus, e_minus, theta = convolutionClassObj.convolutionCalc(Pk_l, l)
 
 	end = time.time()
 
-	f = open('stats2.txt', 'w')
-	f.write(str(theta) + '\n')
-	f.close()
+	#f = open('stats2.txt', 'w')
+	#f.write(str(theta) + '\n')
+	#f.close()
 
+	int1 = []
+	int2 = []
+
+	e_prime = e_minus
+	for t in theta:
+		i = 0
+		for eta in theta:
+			if (eta >= theta):
+				int1.append(e_minus[i]/eta)
+				int2.append(t*t*e_minus[i]/(eta*eta*eta))
+			i += 1
+
+
+	
 	sum=0
 	for i in range(len(edat)):
 	    sum += pow(edat[i] - e_plus[i], 2.0)
-	return sum
+	return math.exp(-sum)
 
 
-def lnprob(p, theta, edat, F2red):
+def lnprob(p, theta, edat, F2red, nlistp):
 
 	lp = lnprior(p)
 	if not isfinite(lp):
 		return -inf
-	return lp + lnlike(p, theta, edat, F2red)
+	return lp + lnlike(p, theta, edat, F2red, nlistp)
 
 
 #import scipy.optimize as opt
@@ -70,18 +95,28 @@ def lnprob(p, theta, edat, F2red):
 #                     args=(theta, edat, F2redshifts))
 #print result['x']
 
+trueomegamat= 0.315
+trueomegaDE = 0.685
+trueh = 0.673
 
+shearPSClass = shearPSFile.shearCalcClass(1, 0, 0, trueh, trueomegamat, trueomegaDE, nlistp)
+Pk_l, l = shearPSClass.shearPSPrePrep(F2redshifts)
+
+convolutionClassObj = shearPSFile.convolutionClass(1, 0, 0, trueh, trueomegamat, trueomegaDE)
+e_plus, e_minus, theta = convolutionClassObj.convolutionCalc(Pk_l, l)
+print e_plus
+sys.exit()
 
 Nwalkers, Ndim = 4, 2
-pos = [[0.315, 0.685] for i in range(Nwalkers)]#+ 1e-1*numpy.random.randn(Ndim) 
+pos = [[trueomegamat, trueomegaDE] for i in range(Nwalkers)]#+ 1e-1*numpy.random.randn(Ndim) 
 
 #random.seed(time.time())
 
 #p0 = [0.3, 0.7]# + random.randn(Ndim) for i in range(Nwalker)]
 
-sampler = emcee.EnsembleSampler(Nwalkers, Ndim, lnprob, args=(theta, edat, F2redshifts, nlistp), threads=1)
+sampler = emcee.EnsembleSampler(Nwalkers, Ndim, lnprob, args=(theta, edat, F2redshifts, nlistp), threads=2)
 
-pos,prob,state = sampler.run_mcmc(pos, 100)
+pos,prob,state = sampler.run_mcmc(pos, 1)
 
 samples = sampler.chain[:, :, :].reshape((-1, Ndim))
 
