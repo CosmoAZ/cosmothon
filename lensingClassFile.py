@@ -122,11 +122,22 @@ class lensingClass(object):
 	#for i in range(len(orgList)):
 	#	nlist[i] = nlist[i]/integral*265601.0
 
-	f = open('nlist.txt', 'w')
-	for i in range(len(nlist)):
-		f.write(str(orgList[i]) + '\t' + str(nlist[i]) + '\n')
-	f.close()
+	#f = open('nlist.txt', 'w')
+	#for i in range(len(nlist)):
+	#	f.write(str(orgList[i]) + '\t' + str(nlist[i]) + '\n')
+	#f.close()
 	
+	#f = open('nlist.txt', 'w')
+	#for i in range(len(numList)):
+	#	f.write(str(numList[i]) + '\n')
+	#f.close()
+
+	#f = open('stats.txt', 'w')
+	#i = 0
+	#for ztemp in orgList:
+	#	f.write(str(numList[i]/(orgList[1] - orgList[0])/265601.0) + '\t' + str(pow(z, 2) * math.exp(- pow((ztemp / 0.38616146),1.2))/1.28307188) + '\t' + 	str(numList[i]/265601.0) + '\n')
+	#	i += 1	
+	#f.close()
 
         integrand = []
 	i = 1
@@ -228,8 +239,9 @@ class lensingClass(object):
 		savedi = i
 		break
 
-	#return numList[savedi]/(orgList[1] - orgList[0])/265601.0
-	return (pow(z, 2) * math.exp(- pow((z / 0.5),1.2))/0.138472)
+	return numList[savedi]/(orgList[1] - orgList[0])/265601.0
+	#return (pow(z, 2) * math.exp(- pow((z / 0.38616146),1.2))/1.28307188)#0.138472)
+	#return numList[savedi]/265601.0
 
     """
 	Returns a gaussian probability cetered at z_0 at point x with a given width (normalized)
@@ -299,7 +311,7 @@ class lensingClass(object):
 	    
 	    #nlist.append(n_z)
 	    if (numList[j] != 0):
-		nlist.append(n_z/count)
+		nlist.append(n_z/numList[j])#count)
 		print("\t" + str(n_z/numList[j]))
 	    else:
 		nlist.append(0.0)

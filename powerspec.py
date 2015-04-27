@@ -21,8 +21,7 @@ class transferFunction(object):
     # @param h
     def __init__(self, omega_cdm=0.25, omega_b=0.05, h=1.):
 
-        if (omega_cdm<0. or omega_b<0. or h<0.):
-		print "WHAT THE HELL HAPPENED HERE?  OH SHIT, WHAT DID YOU DO, AARON?"            
+        if (omega_cdm<0. or omega_b<0. or h<0.):    
 		#omega_cdm = 0.0		
 		return -1
 
